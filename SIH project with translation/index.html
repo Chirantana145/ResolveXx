@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CivicReport - SQLite-Powered Civic Issue Reporting System</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+    <script src="app.js"></script>
+
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar" id="mainNavbar">
+        <div class="container">
+            <div class="nav-brand">
+                <h2 data-translate="app-title" 
+                    data-lang-en="SAKSHAM"
+                    data-lang-kn="ಸಾಕ್ಷಾಮ್"
+                    data-lang-hi="साक्षम"
+                    data-lang-te="సాక్షం"
+                    data-lang-ta="சக்ஷம்"
+                    data-lang-ml="സാക്ഷം">SAKSHAM</h2>
+                <small data-translate="app-subtitle"
+                    data-lang-en="SC-village amenties & Knowledge System for Holistic Assesment and Monitoring"
+                    data-lang-kn="SC-ಗ್ರಾಮದ ಸೌಲಭ್ಯಗಳು ಮತ್ತು ಸಮಗ್ರ ಮೌಲ್ಯಮಾಪನ ಮತ್ತು ಮೇಲ್ವಿಚಾರಣೆಗಾಗಿ ಜ್ಞಾನ ವ್ಯವಸ್ಥೆ"
+                    data-lang-hi="एससी-ग्राम की सुविधाएं और समग्र मूल्यांकन और निगरानी के लिए ज्ञान प्रणाली"
+                    data-lang-te="ఎస్సీ-గ్రామ సదుపాయాలు మరియు సమగ్ర మూల్యాంకనం, పర్యవేక్షణ కోసం విజ్ఞాన వ్యవస్థ"
+                    data-lang-ta="SC-கிராம வசதிகள் மற்றும் முழுமையான மதிப்பீடு மற்றும் கண்காணிப்புக்கான அறிவு அமைப்பு"
+                    data-lang-ml="എസ്.സി-ഗ്രാമത്തിലെ സൗകര്യങ്ങളും സമഗ്ര വിലയിരുത്തലിനും നിരീക്ഷണത്തിനുമുള്ള വിജ്ഞാന വ്യവസ്ഥയും">SC-village amenties & Knowledge System for Holistic Assesment and Monitoring</small>
+            </div>
+            <div style="display: flex; align-items: center; gap: 16px;">
+                <!-- Language Selector -->
+                <div class="language-selector">
+                    <select id="languageSelect" class="language-dropdown">
+                        <option value="en">English</option>
+                        <option value="kn">ಕನ್ನಡ (Kannada)</option>
+                        <option value="hi">हिंदी (Hindi)</option>
+                        <option value="te">తెలుగు (Telugu)</option>
+                        <option value="ta">தமிழ் (Tamil)</option>
+                        <option value="ml">മലയാളം (Malayalam)</option>
+                    </select>
+                </div>
+                <div class="nav-links" id="navLinks">
+                    <!-- Navigation links will be dynamically populated based on user role -->
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast hidden">
+        <span id="toastMessage"></span>
+        <button id="closeToast">&times;</button>
+    </div>
+    <!-- Initial Login Selection Page -->
+    <div id="loginSelectionPage" class="page active">
+        <div class="container">
+            <div class="login-selection-container">
+                <div class="login-selection-header">
+                    <h1>Welcome to CivicReport</h1>
+                    <p>Choose your login type to continue</p>
+                </div>
+                <div class="login-options-grid">
+                    <div class="login-option-card" onclick="app.showLoginType('citizen')">
+                        <div class="login-icon">👤</div>
+                        <h3>Citizen Login</h3>
+                        <p>Report and track civic issues in your community</p>
+                    </div>
+                    <div class="login-option-card" onclick="app.showLoginType('staff')">
+                        <div class="login-icon">👷</div>
+                        <h3>Staff Login</h3>
+                        <p>Manage and respond to reported issues</p>
+                    </div>
+                    <div class="login-option-card" onclick="app.showLoginType('admin')">
+                        <div class="login-icon">⚙️</div>
+                        <h3>Admin Login</h3>
+                        <p>Full system administration and oversight</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Citizen Login/Register Page -->
+    <div id="citizenAuthPage" class="page">
+        <div class="container">
+            <div class="login-container">
+                <h2>Citizen Portal</h2>
+                <div class="auth-tabs">
+                    <button id="citizenLoginTab" class="auth-tab active" onclick="app.showAuthTab('login')">Login</button>
+                    <button id="citizenRegisterTab" class="auth-tab" onclick="app.showAuthTab('register')">Register</button>
+                </div>
+                
+                <!-- Login Form -->
+                <form id="citizenLoginForm" class="auth-form active">
+                    <div class="form-group">
+                        <label for="citizenLoginEmail" class="form-label">Email</label>
+                        <input type="email" id="citizenLoginEmail" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="citizenLoginPassword" class="form-label">Password</label>
+                        <input type="password" id="citizenLoginPassword" class="form-control" required>
+                    </div>
+                    <button type="submit" class="btn btn--primary btn--full-width">Login</button>
+                    <button type="button" class="btn btn--outline btn--full-width" onclick="app.showPage('loginSelectionPage')">Back</button>
+                </form>
+                
+                <!-- Register Form -->
+                <form id="citizenRegisterForm" class="auth-form">
+                    <div class="form-group">
+                        <label for="citizenRegisterName" class="form-label">Full Name</label>
+                        <input type="text" id="citizenRegisterName" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="citizenRegisterEmail" class="form-label">Email</label>
+                        <input type="email" id="citizenRegisterEmail" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="citizenRegisterPassword" class="form-label">Password</label>
+                        <input type="password" id="citizenRegisterPassword" class="form-control" required minlength="6">
+                    </div>
+                    <div class="form-group">
+                        <label for="citizenRegisterConfirm" class="form-label">Confirm Password</label>
+                        <input type="password" id="citizenRegisterConfirm" class="form-control" required>
+                    </div>
+                    <button type="submit" class="btn btn--primary btn--full-width">Register</button>
+                    <button type="button" class="btn btn--outline btn--full-width" onclick="app.showPage('loginSelectionPage')">Back</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Staff Login Page -->
+    <div id="staffLoginPage" class="page">
+        <div class="container">
+            <div class="login-container">
+                <h2>Staff Login</h2>
+                <p class="login-subtitle">Department Staff Access</p>
+                <form id="staffLoginForm">
+                    <div class="form-group">
+                        <label for="staffEmail" class="form-label">Email</label>
+                        <input type="email" id="staffEmail" class="form-control" value="john.worker@city.gov" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="staffPassword" class="form-label">Password</label>
+                        <input type="password" id="staffPassword" class="form-control" value="worker123" required>
+                    </div>
+                    <button type="submit" class="btn btn--primary btn--full-width">Login</button>
+                    <button type="button" class="btn btn--outline btn--full-width" onclick="app.showPage('loginSelectionPage')">Back</button>
+                </form>
+                <div class="demo-credentials">
+                    <p><strong>Demo Staff Credentials:</strong></p>
+                    <p>john.worker@city.gov / worker123</p>
+                    <p>jane.electric@city.gov / staff123</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Citizen Portal - Landing Page -->
+    <div id="landingPage" class="page active">
+        <div class="container">
+            <div class="hero-section">
+                <div class="hero-content">
+                    <h1 data-translate="hero-title"
+                        data-lang-en="Report Rural Development Issues"
+                        data-lang-kn="ಗ್ರಾಮೀಣ ಅಭಿವೃದ್ಧಿ ಸಮಸ್ಯೆಗಳ ವರದಿ"
+                        data-lang-hi="ग्रामीण विकास के मुद्दों की रिपोर्ट करें"
+                        data-lang-te="గ్రామీణ అభివృద్ధి సమస్యలను నివేదించండి"
+                        data-lang-ta="கிராமப்புற மேம்பாட்டுப் பிரச்சினைகளை புகாரளிக்கவும்"
+                        data-lang-ml="ഗ്രാമീണ വികസന പ്രശ്നങ്ങൾ രേഖപ്പെടുത്തുക">Report Rural Development Issues</h1>
+                    
+                    <p data-translate="hero-description"
+                    data-lang-en="Help transform your village into an Adarsh Gram. Our system ensures reliable tracking of rural development issues across education, healthcare, sanitation, connectivity, and livelihood. Together, we build stronger villages."
+                    data-lang-kn="ನಿಮ್ಮ ಗ್ರಾಮವನ್ನು ಆದರ್ಶ ಗ್ರಾಮವನ್ನಾಗಿ ಪರಿವರ್ತಿಸಲು ಸಹಾಯ ಮಾಡಿ. ನಮ್ಮ ವ್ಯವಸ್ಥೆಯು ಶಿಕ್ಷಣ, ಆರೋಗ್ಯ, ನೈರ್ಮಲ್ಯ, ಸಂಪರ್ಕ ಮತ್ತು ಜೀವನೋಪಾಯಕ್ಕೆ ಸಂಬಂಧಿಸಿದ ಗ್ರಾಮೀಣಾಭಿವೃದ್ಧಿ ಸಮಸ್ಯೆಗಳನ್ನು ವಿಶ್ವಾಸಾರ್ಹವಾಗಿ ಟ್ರ್ಯಾಕ್ ಮಾಡುತ್ತದೆ. ಒಟ್ಟಾಗಿ, ನಾವು ಬಲಿಷ್ಠ ಗ್ರಾಮಗಳನ್ನು ನಿರ್ಮಿಸುತ್ತೇವೆ."
+                    data-lang-hi="अपने गाँव को एक आदर्श ग्राम में बदलने में मदद करें। हमारा सिस्टम शिक्षा, स्वास्थ्य सेवा, स्वच्छता, कनेक्टिविटी और आजीविका से संबंधित ग्रामीण विकास के मुद्दों की विश्वसनीय ट्रैकिंग सुनिश्चित करता है। साथ मिलकर, हम मजबूत गाँव बनाते हैं "
+                    data-lang-te="మీ గ్రామాన్ని ఆదర్శ గ్రామంగా మార్చడానికి సహాయం చేయండి. విద్య, ఆరోగ్య సంరక్షణ, పారిశుధ్యం, కనెక్టివిటీ మరియు జీవనోపాధి వంటి గ్రామీణ అభివృద్ధి సమస్యలను మా వ్యవస్థ విశ్వసనీయంగా ట్రాక్ చేస్తుంది. కలిసి, మనం బలమైన గ్రామాలను నిర్మిస్తాం"
+                    data-lang-ta="உங்கள் கிராமத்தை ஒரு ஆதர்ஷ் கிராமமாக மாற்ற உதவுங்கள். கல்வி, சுகாதாரம், சுகாதாரம், இணைப்பு மற்றும் வாழ்வாதாரம் ஆகியவற்றில் கிராமப்புற மேம்பாட்டுப் பிரச்சினைகளை எங்கள் அமைப்பு நம்பகத்தன்மையுடன் கண்காணிக்கிறது. ஒன்றாக, நாம் வலுவான கிராமங்களை உருவாக்குகிறோம்"
+                    data-lang-ml="നിങ്ങളുടെ ഗ്രാമത്തെ ഒരു ആദർശ് ഗ്രാമമാക്കി മാറ്റാൻ സഹായിക്കുക. വിദ്യാഭ്യാസം, ആരോഗ്യ സംരക്ഷണം, ശുചിത്വം, കണക്റ്റിവിറ്റി, ഉപജീവനം എന്നിവയുമായി ബന്ധപ്പെട്ട ഗ്രാമീണ വികസന പ്രശ്നങ്ങൾ ഞങ്ങളുടെ സിസ്റ്റം വിശ്വസനീയമായി ട്രാക്ക് ചെയ്യുന്നു. ഒരുമിച്ച്, നമ്മൾ ശക്തമായ ഗ്രാമങ്ങൾ കെട്ടിപ്പടുക്കുന്നു ">Help transform your village into an Adarsh Gram. Our system ensures reliable tracking of rural development issues across education, healthcare, sanitation, connectivity, and livelihood. Together, we build stronger villages.</p>
+                    
+                    <button id="reportIssueBtn" class="btn btn--primary btn--lg"
+                            data-translate="btn-report-issue"
+                            data-lang-en="Report Village Issue"
+                            data-lang-kn="ಗ್ರಾಮದ ಸಮಸ್ಯೆಯನ್ನು ವರದಿ ಮಾಡಿ"
+                            data-lang-hi="गाँव के मुद्दे की रिपोर्ट करें"
+                            data-lang-te="గ్రామ సమస్యను నివేదించండి"
+                            data-lang-ta="கிராமப் பிரச்சினையைப் புகாரளிக்கவும்"
+                            data-lang-ml="ഗ്രാമത്തിലെ പ്രശ്നം രേഖപ്പെടുത്തുക">Report Village Issue</button>
+                </div>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-number" id="totalReports">0</div>
+                        <div class="stat-label"
+                            data-translate="stat-total"
+                            data-lang-en="Total Reports"
+                            data-lang-kn="ಒಟ್ಟು ವರದಿಗಳು"
+                            data-lang-hi="कुल रिपोर्टें"
+                            data-lang-te="మొత్తం నివేదికలు"
+                            data-lang-ta="மொத்த அறிக்கைகள்"
+                            data-lang-ml="ആകെ റിപ്പോർട്ടുകൾ">Total Reports</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="resolvedReports">0</div>
+                        <div class="stat-label"
+                            data-translate="stat-resolved"
+                            data-lang-en="Resolved"
+                            data-lang-kn="ಪರಿಹರಿಸಲಾಗಿದೆ"
+                            data-lang-hi="समाधान हो गया"
+                            data-lang-te="పరిష్కరించబడింది"
+                            data-lang-ta="தீர்க்கப்பட்டது"
+                            data-lang-ml="പരിഹരിച്ചു">Resolved</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="avgResolutionTime">0</div>
+                        <div class="stat-label"
+                            data-translate="stat-avg-time"
+                            data-lang-en="Avg. Resolution Days"
+                            data-lang-kn="ಸರಾಸರಿ ಪರಿಹಾರ ದಿನಗಳು"
+                            data-lang-hi="औसत समाधान दिवस"
+                            data-lang-te="సగటు పరిష్కార రోజులు"
+                            data-lang-ta="சராசரி தீர்வு நாட்கள்"
+                            data-lang-ml="ശരാശരി പരിഹാര ദിവസങ്ങൾ">Avg. Resolution Days</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="pendingReports">0</div>
+                        <div class="stat-label"
+                            data-translate="stat-pending"
+                            data-lang-en="Pending Review"
+                            data-lang-kn="ಪರಿಶೀಲನೆಯಲ್ಲಿರುವವು"
+                            data-lang-hi="समीक्षा के लिए लंबित"
+                            data-lang-te="సమీక్షలో ఉంది"
+                            data-lang-ta="மதிப்பாய்வில் உள்ளது"
+                            data-lang-ml="സमीക്ഷയ്ക്ക് ബാക്കിയുള്ളവ">Pending Review</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Report Issue Form -->
+    <div id="reportForm" class="page">
+        <div class="container">
+            <div class="form-container">
+                <h2 data-translate="form-title"
+                    data-lang-en="Report Village Development Issue"
+                    data-lang-kn="ಗ್ರಾಮದ ಅಭಿವೃದ್ಧಿ ಸಮಸ್ಯೆಯನ್ನು ವರದಿ ಮಾಡಿ"
+                    data-lang-hi="गाँव के विकास के मुद्दे की रिपोर्ट करें"
+                    data-lang-te="గ్రామ అభివృద్ధి సమస్యను నివేదించండి"
+                    data-lang-ta="கிராம மேம்பாட்டுப் பிரச்சினையைப் புகாரளிக்கவும்"
+                    data-lang-ml="ഗ്രാമ വികസന പ്രശ്നം രേഖപ്പെടുത്തുക">Report Village Development Issue</h2>
+                
+                <form id="issueForm">
+                    <div class="form-group">
+                        <label class="form-label"
+                            data-translate="label-photo"
+                            data-lang-en="Photo (Optional)"
+                            data-lang-kn="ಛಾಯಾಚಿತ್ರ (ಐಚ್ಛಿಕ)"
+                            data-lang-hi="फ़ोटो (वैकल्पिक)"
+                            data-lang-te="ఫోటో (ఐచ్ఛికం)"
+                            data-lang-ta="புகைப்படம் (விரும்பினால்)"
+                            data-lang-ml="ഫോട്ടോ (ഓപ്ഷണൽ)">Photo (Optional)</label>
+                        <div class="photo-upload">
+                            <input type="file" id="photoInput" accept="image/*" capture="environment">
+                            <div id="photoPreview" class="photo-preview hidden"></div>
+                            <button type="button" id="takePhotoBtn" class="btn btn--outline"
+                                    data-translate="btn-take-photo"
+                                    data-lang-en="Take Photo"
+                                    data-lang-kn="ಛಾಯಾಚಿತ್ರ ತೆಗೆಯಿರಿ"
+                                    data-lang-hi="फ़ोटो लें"
+                                    data-lang-te="ఫోటో తీయండి"
+                                    data-lang-ta="புகைப்படம் எடுக்கவும்"
+                                    data-lang-ml="ഫോട്ടോ എടുക്കുക">Take Photo</button>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="category" class="form-label"
+                            data-translate="label-category"
+                            data-lang-en="Issue Category *"
+                            data-lang-kn="ಸಮಸ್ಯೆಯ ವರ್ಗ *"
+                            data-lang-hi="समस्या की श्रेणी *"
+                            data-lang-te="సమస్య వర్గం *"
+                            data-lang-ta="பிரச்சினை வகை *"
+                            data-lang-ml="പ്രശ്നത്തിൻ്റെ വിഭാഗം *">Issue Category *</label>
+                        <select id="category" class="form-control" required>
+                            <option value="" 
+                                    data-translate="option-select-category"
+                                    data-lang-en="Select category..."
+                                    data-lang-kn="ವರ್ಗವನ್ನು ಆಯ್ಕೆಮಾಡಿ..."
+                                    data-lang-hi="श्रेणी का चयन करें..."
+                                    data-lang-te="వర్గాన్ని ఎంచుకోండి..."
+                                    data-lang-ta="வகையைத் தேர்ந்தெடுக்கவும்..."
+                                    data-lang-ml="വിഭാഗം തിരഞ്ഞെടുക്കുക...">Select category...</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="priority" class="form-label"
+                            data-translate="label-priority"
+                            data-lang-en="Priority Level *"
+                            data-lang-kn="ಆದ್ಯತಾ ಮಟ್ಟ *"
+                            data-lang-hi="प्राथमिकता स्तर *"
+                            data-lang-te="ప్రాధాన్యత స్థాయి *"
+                            data-lang-ta="முன்னுரிமை நிலை *"
+                            data-lang-ml="മുൻഗണന നില *">Priority Level *</label>
+                        <select id="priority" class="form-control" required>
+                            <option value=""
+                                    data-translate="option-select-priority"
+                                    data-lang-en="Select priority..."
+                                    data-lang-kn="ಆದ್ಯತೆಯನ್ನು ಆಯ್ಕೆಮಾಡಿ..."
+                                    data-lang-hi="प्राथमिकता का चयन करें..."
+                                    data-lang-te="ప్రాధాన్యతను ఎంచుకోండి..."
+                                    data-lang-ta="முன்னுரிமையைத் தேர்ந்தெடுக்கவும்..."
+                                    data-lang-ml="മുൻഗണന തിരഞ്ഞെടുക്കുക...">Select priority...</option>
+                            <option value="Low"
+                                    data-translate="priority-low"
+                                    data-lang-en="Low - General improvement needed"
+                                    data-lang-kn="ಕಡಿಮೆ - ಸಾಮಾನ್ಯ ಸುಧಾರಣೆ ಅಗತ್ಯವಿದೆ"
+                                    data-lang-hi="निम्न - सामान्य सुधार की आवश्यकता"
+                                    data-lang-te="తక్కువ - సాధారణ మెరుగుదల అవసరం"
+                                    data-lang-ta="குறைந்த - பொதுவான முன்னேற்றம் தேவை"
+                                    data-lang-ml="കുറഞ്ഞത് - പൊതുവായ മെച്ചപ്പെടുത്തൽ ആവശ്യമുണ്ട്">Low - General improvement needed</option>
+                            <option value="Medium"
+                                    data-translate="priority-medium"
+                                    data-lang-en="Medium - Affects daily life"
+                                    data-lang-kn="ಮಧ್ಯಮ - ದೈನಂದಿನ ಜೀವನದ ಮೇಲೆ ಪರಿಣಾಮ ಬೀರುತ್ತದೆ"
+                                    data-lang-hi="मध्यम - रोज़मर्रा के जीवन को प्रभावित करता है"
+                                    data-lang-te="మధ్యమం - రోజువారీ జీవితాన్ని ప్రభావితం చేస్తుంది"
+                                    data-lang-ta="நடுத்தர - தினசரி வாழ்க்கையை பாதிக்கிறது"
+                                    data-lang-ml="ഇടത്തരം - ദൈനംദിന ജീവിതത്തെ ബാധിക്കുന്നു">Medium - Affects daily life</option>
+                            <option value="High"
+                                    data-translate="priority-high"
+                                    data-lang-en="High - Critical village need"
+                                    data-lang-kn="ಹೆಚ್ಚು - ಪ್ರಮುಖ ಗ್ರಾಮದ ಅಗತ್ಯ"
+                                    data-lang-hi="उच्च - गाँव की महत्वपूर्ण आवश्यकता"
+                                    data-lang-te="అధిక - ముఖ్యమైన గ్రామ అవసరం"
+                                    data-lang-ta="அதிக - முக்கியமான கிராமத் தேவை"
+                                    data-lang-ml="കൂടുതൽ - ഗ്രാമത്തിന് അത്യാവശ്യമായ ആവശ്യം">High - Critical village need</option>
+                            <option value="Emergency"
+                                    data-translate="priority-emergency"
+                                    data-lang-en="Emergency - Immediate action required"
+                                    data-lang-kn="ತುರ್ತು - ತಕ್ಷಣದ ಕ್ರಮ ಅಗತ್ಯವಿದೆ"
+                                    data-lang-hi="आपातकालीन - तत्काल कार्रवाई की आवश्यकता"
+                                    data-lang-te="అత్యవసరం - తక్షణ చర్య అవసరం"
+                                    data-lang-ta="அவசரம் - உடனடி நடவடிக்கை தேவை"
+                                    data-lang-ml="അടിയന്തിരം - അടിയന്തര നടപടി ആവശ്യമാണ്">Emergency - Immediate action required</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="title" class="form-label"
+                            data-translate="label-title"
+                            data-lang-en="Issue Title *"
+                            data-lang-kn="ಸಮಸ್ಯೆಯ ಶೀರ್ಷಿಕೆ *"
+                            data-lang-hi="समस्या का शीर्षक *"
+                            data-lang-te="సమస్య శీర్షిక *"
+                            data-lang-ta="பிரச்சினை தலைப்பு *"
+                            data-lang-ml="പ്രശ്നത്തിൻ്റെ തലക്കെട്ട് *">Issue Title *</label>
+                        <input type="text" id="title" class="form-control" required maxlength="255"
+                            data-translate="placeholder-title"
+                            placeholder="Brief description of the issue"
+                            data-lang-en="Brief description of the issue"
+                            data-lang-kn="ಸಮಸ್ಯೆಯ ಸಂಕ್ಷಿಪ್ತ ವಿವರಣೆ"
+                            data-lang-hi="समस्या का संक्षिप्त विवरण"
+                            data-lang-te="సమస్య యొక్క సంక్షిప్త వివరణ"
+                            data-lang-ta="பிரச்சினையின் சுருக்கமான விளக்கம்"
+                            data-lang-ml="പ്രശ്നത്തെക്കുറിച്ചുള്ള ഒരു ചെറിയ വിവരണം">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="description" class="form-label"
+                            data-translate="label-description"
+                            data-lang-en="Description *"
+                            data-lang-kn="ವಿವರಣೆ *"
+                            data-lang-hi="विवरण *"
+                            data-lang-te="వివరణ *"
+                            data-lang-ta="விளக்கம் *"
+                            data-lang-ml="വിവരണം *">Description *</label>
+                        <textarea id="description" class="form-control" rows="4" required
+                                data-translate="placeholder-description"
+                                placeholder="Provide detailed information about the issue, including any relevant circumstances..."
+                                data-lang-en="Provide detailed information about the issue, including any relevant circumstances..."
+                                data-lang-kn="ಸಮಸ್ಯೆಯ ಬಗ್ಗೆ ವಿವರವಾದ ಮಾಹಿತಿ ಒದಗಿಸಿ, ಸಂಬಂಧಿತ ಸಂದರ್ಭಗಳೊಂದಿಗೆ..."
+                                data-lang-hi="समस्या के बारे में विस्तृत जानकारी दें, जिसमें कोई भी प्रासंगिक परिस्थितियाँ शामिल हों..."
+                                data-lang-te="సంబంధిత పరిస్థితులతో సహా సమస్య గురించి వివరణాత్మక సమాచారాన్ని అందించండి..."
+                                data-lang-ta="சம்பந்தப்பட்ட சூழ்நிலைகள் உட்பட, பிரச்சினை பற்றிய விரிவான தகவல்களை வழங்கவும்..."
+                                data-lang-ml="ബന്ധപ്പെട്ട സാഹചര്യങ്ങൾ ഉൾപ്പെടെ പ്രശ്നത്തെക്കുറിച്ച് വിശദമായ വിവരങ്ങൾ നൽകുക..."></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label"
+                            data-translate="label-location"
+                            data-lang-en="Location"
+                            data-lang-kn="ಸ್ಥಳ"
+                            data-lang-hi="स्थान"
+                            data-lang-te="స్థానం"
+                            data-lang-ta="இடம்"
+                            data-lang-ml="സ്ഥലം">Location</label>
+                        <div class="location-section">
+                            <button type="button" id="getLocationBtn" class="btn btn--outline"
+                                    data-translate="btn-get-location"
+                                    data-lang-en="Get Current Location"
+                                    data-lang-kn="ಪ್ರಸ್ತುತ ಸ್ಥಳ ಪಡೆಯಿರಿ"
+                                    data-lang-hi="वर्तमान स्थान प्राप्त करें"
+                                    data-lang-te="ప్రస్తుత స్థానాన్ని పొందండి"
+                                    data-lang-ta="தற்போதைய இடத்தைப் பெறவும்"
+                                    data-lang-ml="നിലവിലെ സ്ഥലം നേടുക">Get Current Location</button>
+                            <div id="locationDisplay" class="location-display"></div>
+                            <input type="text" id="manualAddress" class="form-control"
+                                data-translate="placeholder-address"
+                                placeholder="Or enter address manually..."
+                                data-lang-en="Or enter address manually..."
+                                data-lang-kn="ಅಥವಾ ವಿಳಾಸವನ್ನು ಕೈಯಾರೆ ನಮೂದಿಸಿ..."
+                                data-lang-hi="या मैन्युअल रूप से पता दर्ज करें..."
+                                data-lang-te="లేదా చిరునామాను మాన్యువల్‌గా నమోదు చేయండి..."
+                                data-lang-ta="அல்லது முகவரியை கைமுறையாக உள்ளிடவும்..."
+                                data-lang-ml="അല്ലെങ്കിൽ വിലാസം സ്വയം നൽകുക...">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="contactEmail" class="form-label"
+                            data-translate="label-contact"
+                            data-lang-en="Contact Email (Optional)"
+                            data-lang-kn="ಸಂಪರ್ಕ ಇಮೇಲ್ (ಐಚ್ಛಿಕ)"
+                            data-lang-hi="संपर्क ईमेल (वैकल्पिक)"
+                            data-lang-te="సంప్రదింపు ఇమెయిల్ (ఐచ్ఛికం)"
+                            data-lang-ta="தொடர்பு மின்னஞ்சல் (விரும்பினால்)"
+                            data-lang-ml="ബന്ധപ്പെടാനുള്ള ഇമെയിൽ (ഓപ്ഷണൽ)">Contact Email (Optional)</label>
+                        <input type="email" id="contactEmail" class="form-control"
+                            data-translate="placeholder-email"
+                            placeholder="your.email@example.com"
+                            data-lang-en="your.email@example.com"
+                            data-lang-kn="ನಿಮ್ಮ.ಇಮೇಲ್@ಉದಾಹರಣೆ.com"
+                            data-lang-hi="आपका.ईमेल@उदाहरण.com"
+                            data-lang-te="మీరు.ఇమెయిల్@ఉదాహరణ.com"
+                            data-lang-ta="உங்கள்.மின்னஞ்சல்@உதாரணம்.com"
+                            data-lang-ml="നിങ്ങളുടെ.ഇമെയിൽ@ഉദാഹരണം.com">
+                        <small class="form-text"
+                            data-translate="help-contact"
+                            data-lang-en="Provide your email to receive updates on this report"
+                            data-lang-kn="ಈ ವರದಿಯ ಬಗ್ಗೆ ನವೀಕರಣಗಳನ್ನು ಪಡೆಯಲು ನಿಮ್ಮ ಇಮೇಲ್ ಅನ್ನು ನೀಡಿ"
+                            data-lang-hi="इस रिपोर्ट पर अपडेट प्राप्त करने के लिए अपना ईमेल प्रदान करें"
+                            data-lang-te="ఈ నివేదికపై నవీకరణలను స్వీకరించడానికి మీ ఇమెయిల్‌ను అందించండి"
+                            data-lang-ta="இந்த அறிக்கை குறித்த புதுப்பிப்புகளைப் பெற உங்கள் மின்னஞ்சலை வழங்கவும்"
+                            data-lang-ml="ഈ റിപ്പോർട്ടിലെ അപ്ഡേറ്റുകൾ ലഭിക്കുന്നതിന് നിങ്ങളുടെ ഇമെയിൽ നൽകുക">Provide your email to receive updates on this report</small>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" id="cancelReportBtn" class="btn btn--outline"
+                                data-translate="btn-cancel"
+                                data-lang-en="Cancel"
+                                data-lang-kn="ರದ್ದುಮಾಡು"
+                                data-lang-hi="रद्द करें"
+                                data-lang-te="రద్దు చేయండి"
+                                data-lang-ta="ரத்து செய்"
+                                data-lang-ml="റദ്ദാക്കുക">Cancel</button>
+                        <button type="submit" id="submitReportBtn" class="btn btn--primary"
+                                data-translate="btn-submit"
+                                data-lang-en="Submit Report"
+                                data-lang-kn="ವರದಿ ಸಲ್ಲಿಸಿ"
+                                data-lang-hi="रिपोर्ट जमा करें"
+                                data-lang-te="నివేదికను సమర్పించండి"
+                                data-lang-ta="அறிக்கையைச் சமர்ப்பி"
+                                data-lang-ml="റിപ്പോർട്ട് സമർപ്പിക്കുക">Submit Report</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Map View -->
+    <div id="mapPage" class="page">
+        <div class="container">
+            <h2>Village Issues Map</h2>
+            <div class="map-controls">
+                <div class="filter-controls">
+                    <select id="mapCategoryFilter" class="form-control">
+                        <option value="">All Categories</option>
+                    </select>
+                    <select id="mapStatusFilter" class="form-control">
+                        <option value="">All Statuses</option>
+                        <option value="Pending">Pending</option>
+                        <option value="In Progress">In Progress</option>
+                        <option value="Resolved">Resolved</option>
+                    </select>
+                    <select id="mapPriorityFilter" class="form-control">
+                        <option value="">All Priorities</option>
+                        <option value="Low">Low</option>
+                        <option value="Medium">Medium</option>
+                        <option value="High">High</option>
+                        <option value="Emergency">Emergency</option>
+                    </select>
+                </div>
+            </div>
+            <div id="mapContainer" class="map-container"></div>
+            <div id="mapLegend" class="map-legend">
+                <h4>Legend</h4>
+                <div class="legend-items"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Track Reports -->
+    <div id="trackPage" class="page">
+        <div class="container">
+            <h2>Track Your Village Reports</h2>
+            <div class="tracking-form">
+                <div class="form-group">
+                    <input type="email" id="trackingEmail" class="form-control" placeholder="Enter your email to view your reports">
+                    <button id="loadReportsBtn" class="btn btn--primary">Load Reports</button>
+                </div>
+            </div>
+            <div id="userReports" class="reports-list"></div>
+        </div>
+    </div>
+
+    <!-- Admin Login -->
+    <div id="adminLogin" class="page">
+        <div class="container">
+            <div class="login-container">
+                <h2>Administrative Login</h2>
+                <p class="login-subtitle">System Administrator Access</p>
+                <form id="loginForm">
+                    <div class="form-group">
+                        <label for="adminEmail" class="form-label">Email</label>
+                        <input type="email" id="adminEmail" class="form-control" value="admin@city.gov" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="adminPassword" class="form-label">Password</label>
+                        <input type="password" id="adminPassword" class="form-control" value="admin123" required>
+                    </div>
+                    <button type="submit" class="btn btn--primary btn--full-width">Login</button>
+                    <button type="button" class="btn btn--outline btn--full-width" onclick="app.showPage('loginSelectionPage')">Back</button>
+                </form>
+                <div class="demo-credentials">
+                    <p><strong>Demo Admin Credentials:</strong></p>
+                    <p>admin@city.gov / admin123</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Admin Dashboard -->
+    <div id="adminDashboard" class="page">
+        <div class="container">
+            <div class="admin-header">
+                <div>
+                    <h2>Rural Development Dashboard</h2>
+                    <p class="admin-subtitle">Adarsh Gram Management System</p>
+                </div>
+                <div class="admin-user-info">
+                    <span id="currentUserInfo">Welcome, Admin</span>
+                    <button id="logoutBtn" class="btn btn--outline">Logout</button>
+                </div>
+            </div>
+            
+            <div class="admin-nav">
+                <button id="dashboardTab" class="admin-tab active">Dashboard</button>
+                <button id="reportsTab" class="admin-tab">Reports Management</button>
+                <button id="analyticsTab" class="admin-tab">Analytics</button>
+                <button id="usersTab" class="admin-tab">Users</button>
+                <button id="settingsTab" class="admin-tab">Settings</button>
+            </div>
+
+            <!-- Dashboard Tab -->
+            <div id="dashboardContent" class="admin-content active">
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <div class="metric-value" id="adminTotalReports">0</div>
+                        <div class="metric-label">Total Reports</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value" id="adminPendingReports">0</div>
+                        <div class="metric-label">Pending</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value" id="adminInProgressReports">0</div>
+                        <div class="metric-label">In Progress</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value" id="adminResolvedReports">0</div>
+                        <div class="metric-label">Resolved</div>
+                    </div>
+                </div>
+
+                <div class="dashboard-grid">
+                    <div class="priority-queue">
+                        <h3>High Priority Issues</h3>
+                        <div id="urgentIssues" class="urgent-issues-list"></div>
+                    </div>
+
+                    <div class="recent-reports">
+                        <h3>Recent Reports</h3>
+                        <div id="recentReports" class="recent-reports-list"></div>
+                    </div>
+                </div>
+
+                <div class="department-workload">
+                    <h3>Department Workload</h3>
+                    <div id="departmentWorkload" class="department-grid"></div>
+                </div>
+            </div>
+
+            <!-- Reports Management Tab -->
+            <div id="reportsContent" class="admin-content">
+                <div class="reports-header">
+                    <h3>Reports Management</h3>
+                    <div class="reports-controls">
+                        <input type="text" id="searchReports" class="form-control" placeholder="Search reports...">
+                        <select id="adminCategoryFilter" class="form-control">
+                            <option value="">All Categories</option>
+                        </select>
+                        <select id="adminStatusFilter" class="form-control">
+                            <option value="">All Statuses</option>
+                            <option value="Pending">Pending</option>
+                            <option value="In Progress">In Progress</option>
+                            <option value="Resolved">Resolved</option>
+                        </select>
+                        <select id="adminDepartmentFilter" class="form-control">
+                            <option value="">All Departments</option>
+                        </select>
+                    </div>
+                </div>
+                <div id="reportsTable" class="reports-table"></div>
+                <div id="reportsPagination" class="pagination"></div>
+            </div>
+
+            <!-- Analytics Tab -->
+            <div id="analyticsContent" class="admin-content">
+                <h3>Analytics & Insights</h3>
+                <div class="analytics-summary">
+                    <div class="analytics-card">
+                        <h4>Response Time</h4>
+                        <div class="analytics-metric">
+                            <span class="metric-number" id="avgResponseTime">2.3</span>
+                            <span class="metric-unit">days avg</span>
+                        </div>
+                    </div>
+                    <div class="analytics-card">
+                        <h4>Resolution Rate</h4>
+                        <div class="analytics-metric">
+                            <span class="metric-number" id="resolutionRate">87</span>
+                            <span class="metric-unit">% resolved</span>
+                        </div>
+                    </div>
+                    <div class="analytics-card">
+                        <h4>Citizen Satisfaction</h4>
+                        <div class="analytics-metric">
+                            <span class="metric-number" id="satisfactionRate">4.2</span>
+                            <span class="metric-unit">/ 5.0 stars</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="charts-grid">
+                    <div class="chart-container" style="position: relative; height: 300px;">
+                        <canvas id="reportsChart"></canvas>
+                    </div>
+                    <div class="chart-container" style="position: relative; height: 300px;">
+                        <canvas id="categoryChart"></canvas>
+                    </div>
+                    <div class="chart-container" style="position: relative; height: 300px;">
+                        <canvas id="resolutionChart"></canvas>
+                    </div>
+                    <div class="chart-container" style="position: relative; height: 300px;">
+                        <canvas id="departmentChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Users Tab -->
+            <!-- Users Tab -->
+            <div id="usersTab">
+            <!-- existing users management markup -->
+                <button id="addUserBtn" class="btn btn--primary" onclick="app.showUserModal()">Add User</button>
+                <div id="usersTable"></div>
+            </div>
+
+            <!-- Export Section -->
+
+            <div id="exportSection" style="margin: 1rem 0; display: none;">
+                <h3>Export Reports</h3>
+                <button class="btn btn--primary" onclick="app.exportReportsToExcel()">
+                    <i class="icon-download"></i> Export to Excel
+                </button>
+                <button class="btn btn--secondary" onclick="app.exportReportsToPDF()">
+                    <i class="icon-file"></i> Export to PDF
+                </button>
+            </div>
+
+
+            <!-- Settings Tab -->
+            <div id="settingsContent" class="admin-content">
+                <h3>System Settings</h3>
+                <div class="settings-sections">
+                    <div class="settings-section">
+                        <h4>Categories Management</h4>
+                        <div id="categoriesList" class="categories-list"></div>
+                        <button id="addCategoryBtn" class="btn btn--outline">Add Category</button>
+                    </div>
+                    <div class="settings-section">
+                        <h4>Departments Management</h4>
+                        <div id="departmentsList" class="departments-list"></div>
+                        <button id="addDepartmentBtn" class="btn btn--outline">Add Department</button>
+                    </div>
+                </div>
+                <div class="database-info">
+                    <h4>Database Information</h4>
+                    <div class="db-stats">
+                        <p><strong>Database Type:</strong> SQLite (simulated)</p>
+                        <p><strong>Total Records:</strong> <span id="totalRecords">0</span></p>
+                        <p><strong>Database Size:</strong> <span id="dbSize">0</span> KB</p>
+                        <p><strong>Last Backup:</strong> <span id="lastBackup">Never</span></p>
+                    </div>
+                    <div class="db-actions">
+                        <button id="backupDbBtn" class="btn btn--outline">Backup Database</button>
+                        <button id="clearDataBtn" class="btn btn--outline">Clear All Data</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Report Detail Modal -->
+    <div id="reportModal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Report Details</h3>
+                <button id="closeModal" class="close-btn">&times;</button>
+            </div>
+            <div id="reportModalBody" class="modal-body"></div>
+            <div class="modal-footer">
+                <button id="updateStatusBtn" class="btn btn--primary">Update Status</button>
+                <button id="assignDeptBtn" class="btn btn--outline">Reassign Department</button>
+                <button id="closeModalBtn" class="btn btn--outline">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add User Modal -->
+    <div id="userModal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Add New User</h3>
+                <button id="closeUserModal" class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="userForm">
+                    <div class="form-group">
+                        <label for="userName" class="form-label">Name *</label>
+                        <input type="text" id="userName" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="userEmail" class="form-label">Email *</label>
+                        <input type="email" id="userEmail" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="userPassword">Password *</label>
+                        <input type="password" id="userPassword" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="confirmPassword">Confirm Password *</label>
+                        <input type="password" id="confirmPassword" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="userRole" class="form-label">Role *</label>
+                        <select id="userRole" class="form-control" required>
+                            <option value="">Select role...</option>
+                            <option value="citizen">Citizen</option>
+                            <option value="staff">Staff</option>
+                            <option value="admin">Administrator</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="userDepartment" class="form-label">Department</label>
+                        <select id="userDepartment" class="form-control">
+                            <option value="">Select department...</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button id="saveUserBtn" class="btn btn--primary">Save User</button>
+                <button id="cancelUserBtn" class="btn btn--outline">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,92 @@
+-- Reports Table
+create table if not exists reports (
+    id bigint generated always as identity primary key,
+    title text not null,
+    description text,
+    category text,
+    priority text check (priority in ('Low','Medium','High','Emergency')),
+    status text check (status in ('Pending','In Progress','Resolved')) default 'Pending',
+    latitude double precision,
+    longitude double precision,
+    address text,
+    photo_path text,
+    citizen_contact text,
+    assigned_department text,
+    internal_notes text,
+    created_at timestamp with time zone default now(),
+    updated_at timestamp with time zone default now()
+);
+
+-- Categories Table
+create table if not exists categories (
+    id bigint generated always as identity primary key,
+    name text unique not null,
+    department_mapping text,
+    description text
+);
+
+-- Departments Table
+create table if not exists departments (
+    id bigint generated always as identity primary key,
+    name text unique not null,
+    contact_email text,
+    contact_phone text,
+    description text
+);
+
+-- Users Table
+create table if not exists users (
+    id bigint generated always as identity primary key,
+    name text not null,
+    email text unique not null,
+    password_hash text not null,
+    role text check (role in ('admin','staff')) default 'staff',
+    department text,
+    created_at timestamp with time zone default now()
+);
+
+-- Add trigger to auto-update updated_at on reports
+create or replace function update_reports_updated_at()
+returns trigger as $$
+begin
+   new.updated_at = now();
+   return new;
+end;
+$$ language plpgsql;
+
+drop trigger if exists reports_updated_at_trigger on reports;
+
+create trigger reports_updated_at_trigger
+before update on reports
+for each row
+execute function update_reports_updated_at();
+
+
+CREATE TABLE users (
+    id SERIAL PRIMARY KEY,
+    name TEXT NOT NULL,
+    email TEXT UNIQUE NOT NULL,
+    password_hash TEXT NOT NULL,
+    role TEXT NOT NULL,
+    department TEXT,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Insert admin users
+INSERT INTO users (name, email, password_hash, role, department) VALUES
+('Admin', 'admin@city.gov', 'admin123', 'admin', 'Administration'),
+('John Worker', 'john.worker@city.gov', 'worker123', 'staff', 'Public Works'),
+('Jane Electric', 'jane.electric@city.gov', 'staff123', 'staff', 'Electric Department');
+
+
+-- Drop the old constraint
+ALTER TABLE users DROP CONSTRAINT IF EXISTS users_role_check;
+
+-- Add new constraint with citizen role
+ALTER TABLE users ADD CONSTRAINT users_role_check 
+CHECK (role IN ('citizen','staff','admin'));
+
+-- Add demo citizen for testing
+INSERT INTO users (name, email, password_hash, role, department) VALUES
+('Demo Citizen', 'citizen@example.com', 'user123', 'citizen', NULL)
+ON CONFLICT (email) DO NOTHING;

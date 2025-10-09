@@ -1,0 +1,908 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TUTORA AI - Personalized Learning Platform</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            padding: 40px 20px;
+            animation: fadeIn 1s ease-in;
+        }
+
+        .header h1 {
+            font-size: 48px;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .header p {
+            font-size: 20px;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            display: none;
+            animation: slideIn 0.5s ease-in;
+        }
+
+        .main-content.active {
+            display: block;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            transition: transform 0.3s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .stat-card .icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+
+        .stat-card h3 {
+            font-size: 36px;
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .stat-card p {
+            color: #666;
+            font-size: 16px;
+        }
+
+        .section {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+
+        .section h2 {
+            color: #667eea;
+            font-size: 32px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .upload-area {
+            border: 3px dashed #667eea;
+            border-radius: 15px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: #f8f9ff;
+        }
+
+        .upload-area:hover {
+            background: #eef2ff;
+            border-color: #764ba2;
+        }
+
+        .upload-area.dragover {
+            background: #e0e7ff;
+            border-color: #764ba2;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 16px;
+            font-weight: 600;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-block;
+            text-decoration: none;
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+        }
+
+        .file-list {
+            margin-top: 20px;
+        }
+
+        .file-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            background: #f8f9ff;
+            border-radius: 10px;
+            margin-bottom: 10px;
+        }
+
+        .file-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .file-icon {
+            font-size: 24px;
+        }
+
+        .chat-container {
+            height: 500px;
+            display: flex;
+            flex-direction: column;
+            background: #f8f9ff;
+            border-radius: 15px;
+            overflow: hidden;
+        }
+
+        .chat-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .message {
+            max-width: 70%;
+            padding: 15px 20px;
+            border-radius: 15px;
+            animation: messageSlide 0.3s ease-in;
+        }
+
+        .message.user {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            align-self: flex-end;
+            border-bottom-right-radius: 5px;
+        }
+
+        .message.ai {
+            background: white;
+            color: #333;
+            align-self: flex-start;
+            border-bottom-left-radius: 5px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .message.system {
+            background: #d4edda;
+            color: #155724;
+            align-self: center;
+            text-align: center;
+            border-radius: 20px;
+        }
+
+        .chat-input-area {
+            display: flex;
+            padding: 20px;
+            background: white;
+            gap: 10px;
+        }
+
+        .chat-input-area input {
+            flex: 1;
+            padding: 15px;
+            border: 2px solid #e0e7ff;
+            border-radius: 25px;
+            font-size: 16px;
+            outline: none;
+        }
+
+        .chat-input-area input:focus {
+            border-color: #667eea;
+        }
+
+        .quiz-container {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+        }
+
+        .quiz-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 30px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e0e7ff;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 30px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            transition: width 0.3s;
+        }
+
+        .question {
+            font-size: 24px;
+            color: #333;
+            margin-bottom: 30px;
+            font-weight: 600;
+        }
+
+        .options {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .option {
+            padding: 20px;
+            border: 2px solid #e0e7ff;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: white;
+        }
+
+        .option:hover {
+            border-color: #667eea;
+            background: #f8f9ff;
+        }
+
+        .option.selected {
+            border-color: #667eea;
+            background: #eef2ff;
+        }
+
+        .option.correct {
+            border-color: #10b981;
+            background: #d1fae5;
+        }
+
+        .option.incorrect {
+            border-color: #ef4444;
+            background: #fee2e2;
+        }
+
+        .explanation {
+            margin-top: 20px;
+            padding: 20px;
+            background: #f0f9ff;
+            border-left: 4px solid #667eea;
+            border-radius: 8px;
+        }
+
+        .results-container {
+            text-align: center;
+            padding: 40px;
+        }
+
+        .results-container .score {
+            font-size: 72px;
+            font-weight: bold;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin: 20px 0;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 40px;
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        .spinner {
+            border: 4px solid #f3f4f6;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        .nav-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #e0e7ff;
+        }
+
+        .nav-tab {
+            padding: 15px 30px;
+            background: none;
+            border: none;
+            color: #666;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+        }
+
+        .nav-tab:hover {
+            color: #667eea;
+        }
+
+        .nav-tab.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(30px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        @keyframes messageSlide {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🧠 TUTORA AI</h1>
+        <p>Your Personalized AI Learning Companion</p>
+    </div>
+
+    <div class="container">
+        <!-- Stats Dashboard -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="icon">🏆</div>
+                <h3 id="totalQuizzes">0</h3>
+                <p>Quizzes Completed</p>
+            </div>
+            <div class="stat-card">
+                <div class="icon">📈</div>
+                <h3 id="avgScore">0%</h3>
+                <p>Average Score</p>
+            </div>
+            <div class="stat-card">
+                <div class="icon">📚</div>
+                <h3 id="totalMaterials">0</h3>
+                <p>Study Materials</p>
+            </div>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <div class="nav-tabs">
+            <button class="nav-tab active" onclick="showTab('upload')">📤 Upload Materials</button>
+            <button class="nav-tab" onclick="showTab('chat')">💬 AI Tutor Chat</button>
+            <button class="nav-tab" onclick="showTab('quiz')">🎯 Take Quiz</button>
+        </div>
+
+        <!-- Upload Section -->
+        <div id="uploadTab" class="main-content active">
+            <div class="section">
+                <h2>📤 Upload Study Material</h2>
+                <div class="upload-area" id="uploadArea" onclick="document.getElementById('fileInput').click()">
+                    <input type="file" id="fileInput" accept=".pdf,.txt" style="display: none;" multiple>
+                    <p style="font-size: 48px; margin-bottom: 20px;">📁</p>
+                    <p style="font-size: 18px; color: #667eea; font-weight: 600;">Click to upload or drag & drop</p>
+                    <p style="color: #666; margin-top: 10px;">Supported: PDF, TXT files</p>
+                </div>
+                <div class="file-list" id="fileList"></div>
+            </div>
+        </div>
+
+        <!-- Chat Section -->
+        <div id="chatTab" class="main-content">
+            <div class="section">
+                <h2>💬 AI Tutor Chat</h2>
+                <div class="chat-container">
+                    <div class="chat-header">
+                        Ask me anything about your study materials!
+                    </div>
+                    <div class="chat-messages" id="chatMessages">
+                        <div class="message system">
+                            👋 Hello! Upload some study materials first, then I can help answer your questions!
+                        </div>
+                    </div>
+                    <div class="chat-input-area">
+                        <input type="text" id="chatInput" placeholder="Ask your doubt here..." onkeypress="if(event.key==='Enter') sendMessage()">
+                        <button class="btn" onclick="sendMessage()">Send</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quiz Section -->
+        <div id="quizTab" class="main-content">
+            <div id="quizSelection" class="section">
+                <h2>🎯 Generate Quiz</h2>
+                <p style="margin-bottom: 20px; color: #666;">Select a study material to generate a quiz:</p>
+                <div id="materialsList"></div>
+                <p id="noMaterialsMsg" class="hidden" style="color: #666; text-align: center; padding: 40px;">
+                    No materials uploaded yet. Please upload study materials first!
+                </p>
+            </div>
+
+            <div id="quizArea" class="hidden"></div>
+        </div>
+
+        <!-- Loading Indicator -->
+        <div id="loading" class="loading">
+            <div class="spinner"></div>
+            <p style="color: white; font-size: 20px;">AI is processing...</p>
+        </div>
+    </div>
+
+    <script>
+        // Global state
+        const API_URL = 'http://localhost:5000/api';
+        const USER_ID = 'demo-user-' + Date.now(); // In production, use real authentication
+        
+        let uploadedFiles = [];
+        let currentQuiz = null;
+        let currentQuestionIndex = 0;
+        let userAnswers = [];
+        let studyContext = '';
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            setupFileUpload();
+            loadProgress();
+        });
+
+        // Tab Navigation
+        function showTab(tabName) {
+            document.querySelectorAll('.nav-tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.main-content').forEach(content => content.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            document.getElementById(tabName + 'Tab').classList.add('active');
+            
+            if (tabName === 'quiz') {
+                loadMaterialsForQuiz();
+            }
+        }
+
+        // File Upload
+        function setupFileUpload() {
+            const uploadArea = document.getElementById('uploadArea');
+            const fileInput = document.getElementById('fileInput');
+
+            uploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadArea.classList.add('dragover');
+            });
+
+            uploadArea.addEventListener('dragleave', () => {
+                uploadArea.classList.remove('dragover');
+            });
+
+            uploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadArea.classList.remove('dragover');
+                handleFiles(e.dataTransfer.files);
+            });
+
+            fileInput.addEventListener('change', (e) => {
+                handleFiles(e.target.files);
+            });
+        }
+
+        async function handleFiles(files) {
+            const fileList = document.getElementById('fileList');
+            
+            for (let file of files) {
+                showLoading();
+                
+                const formData = new FormData();
+                formData.append('file', file);
+
+                try {
+                    const response = await fetch(`${API_URL}/upload`, {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        const fileData = {
+                            id: Date.now() + Math.random(),
+                            name: data.filename,
+                            type: file.type,
+                            size: file.size,
+                            content: data.full_text
+                        };
+                        
+                        uploadedFiles.push(fileData);
+                        studyContext += data.full_text + '\n\n';
+                        
+                        displayFile(fileData);
+                        updateStats();
+                        addChatMessage('system', `✓ "${data.filename}" uploaded successfully!`);
+                    }
+                } catch (error) {
+                    console.error('Upload error:', error);
+                    alert('Error uploading file. Please try again.');
+                } finally {
+                    hideLoading();
+                }
+            }
+        }
+
+        function displayFile(fileData) {
+            const fileList = document.getElementById('fileList');
+            const fileItem = document.createElement('div');
+            fileItem.className = 'file-item';
+            fileItem.innerHTML = `
+                <div class="file-info">
+                    <span class="file-icon">📄</span>
+                    <div>
+                        <strong>${fileData.name}</strong>
+                        <p style="color: #666; font-size: 14px;">${(fileData.size / 1024).toFixed(1)} KB</p>
+                    </div>
+                </div>
+                <button class="btn" onclick="generateQuizFromFile('${fileData.id}')">Generate Quiz</button>
+            `;
+            fileList.appendChild(fileItem);
+        }
+
+        // Chat Functions
+        async function sendMessage() {
+            const input = document.getElementById('chatInput');
+            const message = input.value.trim();
+            
+            if (!message) return;
+            
+            if (uploadedFiles.length === 0) {
+                alert('Please upload study materials first!');
+                return;
+            }
+
+            addChatMessage('user', message);
+            input.value = '';
+            showLoading();
+
+            try {
+                const response = await fetch(`${API_URL}/chat`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        message: message,
+                        context: studyContext
+                    })
+                });
+
+                const data = await response.json();
+                addChatMessage('ai', data.response);
+            } catch (error) {
+                console.error('Chat error:', error);
+                addChatMessage('system', 'Sorry, there was an error. Please try again.');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        function addChatMessage(type, content) {
+            const chatMessages = document.getElementById('chatMessages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${type}`;
+            messageDiv.textContent = content;
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        // Quiz Functions
+        function loadMaterialsForQuiz() {
+            const materialsList = document.getElementById('materialsList');
+            const noMaterialsMsg = document.getElementById('noMaterialsMsg');
+            
+            materialsList.innerHTML = '';
+            
+            if (uploadedFiles.length === 0) {
+                noMaterialsMsg.classList.remove('hidden');
+                return;
+            }
+            
+            noMaterialsMsg.classList.add('hidden');
+            
+            uploadedFiles.forEach(file => {
+                const materialItem = document.createElement('div');
+                materialItem.className = 'file-item';
+                materialItem.innerHTML = `
+                    <div class="file-info">
+                        <span class="file-icon">📄</span>
+                        <strong>${file.name}</strong>
+                    </div>
+                    <button class="btn" onclick="generateQuizFromFile('${file.id}')">Generate Quiz</button>
+                `;
+                materialsList.appendChild(materialItem);
+            });
+        }
+
+        async function generateQuizFromFile(fileId) {
+            const file = uploadedFiles.find(f => f.id == fileId);
+            if (!file) return;
+
+            showLoading();
+
+            try {
+                const response = await fetch(`${API_URL}/generate-quiz`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        text: file.content,
+                        num_questions: 5,
+                        difficulty: 'medium'
+                    })
+                });
+
+                // Check if the response was successful (status code 200-299)
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Unknown error occurred.');
+                }
+
+                const data = await response.json();
+                
+                if (data.questions && data.questions.length > 0) {
+                    currentQuiz = {
+                        materialName: file.name,
+                        questions: data.questions
+                    };
+                    currentQuestionIndex = 0;
+                    userAnswers = [];
+                    
+                    document.getElementById('quizSelection').classList.add('hidden');
+                    displayQuestion();
+                } else {
+                    alert('The AI did not generate any questions. Please try again with more detailed content.');
+                }
+
+            } catch (error) {
+                console.error('Quiz generation error:', error);
+                alert(`Error generating quiz: ${error.message}`);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        function displayQuestion() {
+            const quizArea = document.getElementById('quizArea');
+            quizArea.classList.remove('hidden');
+            
+            const question = currentQuiz.questions[currentQuestionIndex];
+            const progress = ((currentQuestionIndex + 1) / currentQuiz.questions.length) * 100;
+            
+            quizArea.innerHTML = `
+                <div class="quiz-container">
+                    <div class="quiz-header">
+                        <span>Question ${currentQuestionIndex + 1} of ${currentQuiz.questions.length}</span>
+                        <span>From: ${currentQuiz.materialName}</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: ${progress}%"></div>
+                    </div>
+                    <div class="question">${question.question}</div>
+                    <div class="options" id="options">
+                        ${question.options.map((opt, idx) => `
+                            <div class="option" onclick="selectOption(${idx})" id="option-${idx}">
+                                ${opt}
+                            </div>
+                        `).join('')}
+                    </div>
+                    <div id="explanationArea"></div>
+                    <button class="btn" id="submitBtn" onclick="submitAnswer()" style="margin-top: 20px;" disabled>
+                        Submit Answer
+                    </button>
+                </div>
+            `;
+        }
+
+        function selectOption(index) {
+            if (userAnswers[currentQuestionIndex] !== undefined) return;
+            
+            document.querySelectorAll('.option').forEach(opt => opt.classList.remove('selected'));
+            document.getElementById(`option-${index}`).classList.add('selected');
+            document.getElementById('submitBtn').disabled = false;
+            window.selectedAnswer = index;
+        }
+
+        function submitAnswer() {
+            if (window.selectedAnswer === undefined) return;
+            
+            const question = currentQuiz.questions[currentQuestionIndex];
+            userAnswers[currentQuestionIndex] = window.selectedAnswer;
+            
+            const isCorrect = window.selectedAnswer === question.correct_answer;
+            
+            document.getElementById(`option-${window.selectedAnswer}`).classList.add(
+                isCorrect ? 'correct' : 'incorrect'
+            );
+            document.getElementById(`option-${question.correct_answer}`).classList.add('correct');
+            
+            const explanationArea = document.getElementById('explanationArea');
+            explanationArea.innerHTML = `
+                <div class="explanation">
+                    <strong>${isCorrect ? '✓ Correct!' : '✗ Incorrect'}</strong>
+                    <p style="margin-top: 10px;">${question.explanation}</p>
+                </div>
+            `;
+            
+            document.getElementById('submitBtn').textContent = 
+                currentQuestionIndex < currentQuiz.questions.length - 1 ? 'Next Question' : 'Finish Quiz';
+            document.getElementById('submitBtn').onclick = nextQuestion;
+            
+            window.selectedAnswer = undefined;
+        }
+
+        function nextQuestion() {
+            currentQuestionIndex++;
+            
+            if (currentQuestionIndex < currentQuiz.questions.length) {
+                displayQuestion();
+            } else {
+                showResults();
+            }
+        }
+
+        function showResults() {
+            const score = userAnswers.filter((ans, idx) => 
+                ans === currentQuiz.questions[idx].correct_answer
+            ).length;
+            const percentage = (score / currentQuiz.questions.length) * 100;
+            
+            const quizArea = document.getElementById('quizArea');
+            quizArea.innerHTML = `
+                <div class="results-container">
+                    <h2 style="color: #667eea;">🏆 Quiz Complete!</h2>
+                    <div class="score">${percentage.toFixed(0)}%</div>
+                    <p style="font-size: 24px; color: #666; margin-bottom: 30px;">
+                        You scored ${score} out of ${currentQuiz.questions.length}
+                    </p>
+                    <button class="btn" onclick="resetQuiz()">Back to Materials</button>
+                    <button class="btn btn-secondary" onclick="reviewAnswers()" style="margin-left: 10px;">Review Answers</button>
+                </div>
+            `;
+            
+            updateStats();
+            saveQuizAttempt(score, currentQuiz.questions.length);
+        }
+
+        function resetQuiz() {
+            document.getElementById('quizSelection').classList.remove('hidden');
+            document.getElementById('quizArea').classList.add('hidden');
+            currentQuiz = null;
+            loadMaterialsForQuiz();
+        }
+
+        function reviewAnswers() {
+            const quizArea = document.getElementById('quizArea');
+            let reviewHTML = '<div class="section"><h2>📝 Review Your Answers</h2>';
+            
+            currentQuiz.questions.forEach((q, idx) => {
+                const isCorrect = userAnswers[idx] === q.correct_answer;
+                reviewHTML += `
+                    <div class="file-item" style="flex-direction: column; align-items: flex-start; margin-bottom: 20px;">
+                        <strong style="margin-bottom: 10px;">${idx + 1}. ${q.question}</strong>
+                        <p style="color: ${isCorrect ? '#10b981' : '#ef4444'}; margin: 5px 0;">
+                            Your answer: ${q.options[userAnswers[idx]]}
+                        </p>
+                        ${!isCorrect ? `<p style="color: #10b981; margin: 5px 0;">Correct answer: ${q.options[q.correct_answer]}</p>` : ''}
+                        <p style="color: #667eea; margin-top: 10px; padding: 10px; background: #f0f9ff; border-radius: 8px;">
+                            💡 ${q.explanation}
+                        </p>
+                    </div>
+                `;
+            });
+            
+            reviewHTML += '<button class="btn" onclick="resetQuiz()">Back to Materials</button></div>';
+            quizArea.innerHTML = reviewHTML;
+        }
+
+        // Progress & Stats
+        function updateStats() {
+            document.getElementById('totalMaterials').textContent = uploadedFiles.length;
+            
+            const stats = JSON.parse(localStorage.getItem('tutoraStats') || '{"quizzes": 0, "totalScore": 0}');
+            document.getElementById('totalQuizzes').textContent = stats.quizzes;
+            document.getElementById('avgScore').textContent = 
+                stats.quizzes > 0 ? (stats.totalScore / stats.quizzes).toFixed(0) + '%' : '0%';
+        }
+
+        function loadProgress() {
+            updateStats();
+        }
+
+        async function saveQuizAttempt(score, total) {
+            const percentage = (score / total) * 100;
+            const stats = JSON.parse(localStorage.getItem('tutoraStats') || '{"quizzes": 0, "totalScore": 0}');
+            stats.quizzes++;
+            stats.totalScore += percentage;
+            localStorage.setItem('tutoraStats', JSON.stringify(stats));
+            updateStats();
+        }
+
+        // Loading
+        function showLoading() {
+            document.getElementById('loading').classList.add('active');
+        }
+
+        function hideLoading() {
+            document.getElementById('loading').classList.remove('active');
+        }
+    </script>
+</body>
+</html>
